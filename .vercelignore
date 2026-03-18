@@ -1,0 +1,6 @@
+# AI Studio specific files
+metadata.json
+firebase-applet-config.json
+firebase-blueprint.json
+firestore.rules
+.env.example
