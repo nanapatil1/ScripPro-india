@@ -169,7 +169,11 @@ export default function App() {
   const [scrollSpeed, setScrollSpeed] = useState(20);
 
   const API_KEY = process.env.GEMINI_API_KEY;
-  const isKeyMissing = !API_KEY || API_KEY === 'MY_GEMINI_API_KEY' || API_KEY === '';
+  const isKeyMissing = !API_KEY || 
+                       API_KEY === 'MY_GEMINI_API_KEY' || 
+                       API_KEY === 'your_api_key_here' || 
+                       API_KEY === 'undefined' ||
+                       API_KEY === '';
 
   const writeString = (view: DataView, offset: number, string: string) => {
     for (let i = 0; i < string.length; i++) {
@@ -188,7 +192,15 @@ export default function App() {
       }
     } catch (err: any) {
       console.error("Failed to fetch trending topics", err);
-      setTrendingError("Could not load trending topics. Please check your connection.");
+      // Show the actual error message for better debugging
+      const errorMessage = err.message || "Unknown error";
+      if (errorMessage.includes("API key not valid")) {
+        setTrendingError("Your API Key is invalid. Please check your Vercel settings.");
+      } else if (errorMessage.includes("quota")) {
+        setTrendingError("API Quota exceeded. Please try again in a few minutes.");
+      } else {
+        setTrendingError(`Error: ${errorMessage}. Please try refreshing.`);
+      }
     } finally {
       setIsLoadingTrending(false);
     }
