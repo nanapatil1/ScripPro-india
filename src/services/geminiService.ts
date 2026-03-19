@@ -91,12 +91,22 @@ Format the output using Markdown for readability.
 }
 
 export async function getTrendingTopics(): Promise<{ title: string; category: string; url?: string }[]> {
+  const fallbackData = [
+    { title: "AI Advancements: Impact on Global Tech Jobs", category: "Technology" },
+    { title: "Global Economic Trends and Market Updates", category: "Finance" },
+    { title: "Major International Sports Events & Highlights", category: "Sports" },
+    { title: "Space Exploration: Latest Missions and Discoveries", category: "Science" },
+    { title: "Entertainment News: Blockbuster Releases & Awards", category: "Entertainment" }
+  ];
+
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.warn('Trending topics skipped: Gemini API Key is missing.');
-      return [];
+    const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+    
+    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY' || apiKey === 'your_api_key_here') {
+      console.warn('Trending topics: API Key is missing or placeholder. Using fallback.');
+      return fallbackData;
     }
+
     const ai = new GoogleGenAI({ apiKey });
     
     const prompt = `
@@ -107,33 +117,39 @@ export async function getTrendingTopics(): Promise<{ title: string; category: st
       Format: [{"title": "Topic Name", "category": "News/Tech/etc", "url": "optional_link"}]
     `;
 
-    // We remove the strict responseSchema here because it often conflicts with googleSearch grounding
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3.1-pro-preview', // Using Pro for better tool usage
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
       },
     });
 
-    const text = response.text?.trim() || '[]';
+    const text = response.text?.trim() || '';
     
+    if (!text) {
+      console.warn('Trending topics: Empty response from AI. Using fallback.');
+      return fallbackData;
+    }
+
     // IMPROVED EXTRACTION: Find the actual JSON array start and end
-    // We look for the first '[' that is followed by a '{' to avoid catching search citations like [1]
     const jsonMatch = text.match(/\[\s*\{[\s\S]*\}\s*\]/);
     
     if (jsonMatch) {
       try {
-        return JSON.parse(jsonMatch[0]);
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       } catch (e) {
-        console.error("JSON parse failed on match, trying manual extraction");
+        console.error("JSON parse failed on match:", e);
       }
     }
     
     // FALLBACK 1: Manual line-by-line extraction if JSON fails
     const lines = text.split('\n')
       .map(l => l.trim())
-      .filter(l => l.length > 15 && !l.startsWith('[') && !l.startsWith('{'));
+      .filter(l => l.length > 15 && !l.startsWith('[') && !l.startsWith('{') && !l.startsWith('`'));
       
     if (lines.length > 0) {
       return lines.slice(0, 6).map(line => ({
@@ -142,17 +158,9 @@ export async function getTrendingTopics(): Promise<{ title: string; category: st
       }));
     }
 
-    // FALLBACK 2: If everything fails, return high-quality static trending topics for India
-    return [
-      { title: "AI Advancements in 2024: Impact on Indian Tech Jobs", category: "Technology" },
-      { title: "Indian Stock Market: Nifty & Sensex Latest Trends", category: "Finance" },
-      { title: "Upcoming Major Sports Events & Cricket Updates", category: "Sports" },
-      { title: "Global Geopolitical Shifts and India's Role", category: "Politics" },
-      { title: "New Space Missions: ISRO's Next Big Leap", category: "Space" }
-    ];
+    return fallbackData;
   } catch (error) {
     console.error('Error fetching trending topics:', error);
-    // Return empty array instead of throwing to prevent UI crash
-    return [];
+    return fallbackData;
   }
 }
