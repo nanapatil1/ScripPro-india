@@ -39,7 +39,11 @@ Format the output using Markdown for readability.
   `;
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('Gemini API Key is missing. Please set VITE_GEMINI_API_KEY in your Vercel project settings.');
+    }
+    const ai = new GoogleGenAI({ apiKey });
     
     const config: any = {
       temperature: 0.7,
@@ -88,7 +92,11 @@ Format the output using Markdown for readability.
 
 export async function getTrendingTopics(): Promise<{ title: string; category: string; url?: string }[]> {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('Gemini API Key is missing. Please set VITE_GEMINI_API_KEY in your Vercel project settings.');
+    }
+    const ai = new GoogleGenAI({ apiKey });
     
     const prompt = `
       Identify 5-7 highly trending topics on the internet today (global and India-specific).

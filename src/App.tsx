@@ -167,6 +167,9 @@ export default function App() {
   const [showTeleprompter, setShowTeleprompter] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(20);
 
+  const API_KEY = process.env.GEMINI_API_KEY;
+  const isKeyMissing = !API_KEY || API_KEY === 'MY_GEMINI_API_KEY' || API_KEY === '';
+
   const writeString = (view: DataView, offset: number, string: string) => {
     for (let i = 0; i < string.length; i++) {
       view.setUint8(offset + i, string.charCodeAt(i));
@@ -359,6 +362,40 @@ export default function App() {
         return "e.g., India's current GDP growth rate and its impact on the middle class...";
     }
   };
+
+  if (isKeyMissing) {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-6 font-sans">
+        <div className="max-w-md w-full bg-neutral-900 border border-neutral-800 rounded-3xl p-8 text-center shadow-2xl">
+          <div className="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Sparkles className="w-8 h-8 text-amber-500" />
+          </div>
+          <h2 className="text-2xl font-bold mb-4 text-white">Gemini API Key Required</h2>
+          <p className="text-neutral-400 mb-8 leading-relaxed">
+            To use this script generator on Vercel, you must add your API key to your project settings.
+          </p>
+          <div className="space-y-4 text-left">
+            <div className="p-4 bg-neutral-950 rounded-xl border border-neutral-800">
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Step 1</p>
+              <p className="text-sm">Go to your project on <span className="text-indigo-400">Vercel.com</span></p>
+            </div>
+            <div className="p-4 bg-neutral-950 rounded-xl border border-neutral-800">
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Step 2</p>
+              <p className="text-sm">Go to <span className="font-bold">Settings</span> &gt; <span className="font-bold">Environment Variables</span></p>
+            </div>
+            <div className="p-4 bg-neutral-950 rounded-xl border border-neutral-800">
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Step 3</p>
+              <p className="text-sm">Add <code className="text-indigo-400">VITE_GEMINI_API_KEY</code> with your actual key.</p>
+            </div>
+            <div className="p-4 bg-neutral-950 rounded-xl border border-neutral-800">
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Step 4</p>
+              <p className="text-sm">Go to <span className="font-bold">Deployments</span> and click <span className="font-bold">Redeploy</span>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans flex flex-col md:flex-row">
