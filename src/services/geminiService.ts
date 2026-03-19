@@ -102,36 +102,44 @@ export async function getTrendingTopics(): Promise<{ title: string; category: st
     const prompt = `
       Identify 5-7 highly trending topics on the internet today (global and India-specific).
       Focus on news, technology, entertainment, and politics.
-      Return the response as a JSON array of objects with "title", "category", and "url" (optional) fields.
+      
+      IMPORTANT: Return ONLY a JSON array of objects. No other text.
+      Format: [{"title": "Topic Name", "category": "News/Tech/etc", "url": "optional_link"}]
     `;
 
+    // We remove the strict responseSchema here because it often conflicts with googleSearch grounding
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              category: { type: Type.STRING },
-              url: { type: Type.STRING }
-            },
-            required: ['title', 'category']
-          }
-        },
         tools: [{ googleSearch: {} }],
       },
     });
 
     const text = response.text?.trim() || '[]';
-    // Robust parsing: remove markdown code blocks if the model accidentally includes them
-    const jsonStr = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
-    return JSON.parse(jsonStr);
+    
+    // Robust extraction: find the first '[' and last ']' to handle cases where the model adds extra text
+    const startIdx = text.indexOf('[');
+    const endIdx = text.lastIndexOf(']');
+    
+    if (startIdx !== -1 && endIdx !== -1) {
+      const jsonStr = text.substring(startIdx, endIdx + 1);
+      return JSON.parse(jsonStr);
+    }
+    
+    // Fallback: if JSON parsing fails, try to parse line by line
+    const lines = text.split('\n').filter(l => l.trim().length > 10);
+    if (lines.length > 0) {
+      return lines.slice(0, 6).map(line => ({
+        title: line.replace(/^[-*0-9.\s]+/, '').trim(),
+        category: 'Trending'
+      }));
+    }
+
+    return [];
   } catch (error) {
     console.error('Error fetching trending topics:', error);
-    throw error;
+    // Return empty array instead of throwing to prevent UI crash
+    return [];
   }
 }
