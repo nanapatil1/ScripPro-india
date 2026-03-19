@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality } from '@google/genai';
+import { GoogleGenAI, Modality, Type } from '@google/genai';
 
 export async function generateScript(
   topic: string,
@@ -94,7 +94,8 @@ export async function getTrendingTopics(): Promise<{ title: string; category: st
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error('Gemini API Key is missing. Please set VITE_GEMINI_API_KEY in your Vercel project settings.');
+      console.warn('Trending topics skipped: Gemini API Key is missing.');
+      return [];
     }
     const ai = new GoogleGenAI({ apiKey });
     
@@ -102,7 +103,6 @@ export async function getTrendingTopics(): Promise<{ title: string; category: st
       Identify 5-7 highly trending topics on the internet today (global and India-specific).
       Focus on news, technology, entertainment, and politics.
       Return the response as a JSON array of objects with "title", "category", and "url" (optional) fields.
-      Example: [{"title": "SpaceX Starship Launch", "category": "Technology", "url": "https://..."}]
     `;
 
     const response = await ai.models.generateContent({
@@ -110,14 +110,28 @@ export async function getTrendingTopics(): Promise<{ title: string; category: st
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              category: { type: Type.STRING },
+              url: { type: Type.STRING }
+            },
+            required: ['title', 'category']
+          }
+        },
         tools: [{ googleSearch: {} }],
       },
     });
 
-    const text = response.text || '[]';
-    return JSON.parse(text);
+    const text = response.text?.trim() || '[]';
+    // Robust parsing: remove markdown code blocks if the model accidentally includes them
+    const jsonStr = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+    return JSON.parse(jsonStr);
   } catch (error) {
     console.error('Error fetching trending topics:', error);
-    return [];
+    throw error;
   }
 }

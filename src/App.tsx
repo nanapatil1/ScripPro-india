@@ -164,6 +164,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
   const [isLoadingTrending, setIsLoadingTrending] = useState(false);
+  const [trendingError, setTrendingError] = useState<string | null>(null);
   const [showTeleprompter, setShowTeleprompter] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(20);
 
@@ -176,18 +177,24 @@ export default function App() {
     }
   };
 
-  React.useEffect(() => {
-    const fetchTrending = async () => {
-      setIsLoadingTrending(true);
-      try {
-        const topics = await getTrendingTopics();
-        setTrendingTopics(topics);
-      } catch (err) {
-        console.error("Failed to fetch trending topics", err);
-      } finally {
-        setIsLoadingTrending(false);
+  const fetchTrending = async () => {
+    setIsLoadingTrending(true);
+    setTrendingError(null);
+    try {
+      const topics = await getTrendingTopics();
+      setTrendingTopics(topics);
+      if (topics.length === 0) {
+        setTrendingError("No trending topics found at the moment.");
       }
-    };
+    } catch (err: any) {
+      console.error("Failed to fetch trending topics", err);
+      setTrendingError("Could not load trending topics. Please check your connection.");
+    } finally {
+      setIsLoadingTrending(false);
+    }
+  };
+
+  React.useEffect(() => {
     fetchTrending();
   }, []);
 
@@ -623,15 +630,39 @@ export default function App() {
                     <TrendingUp className="w-5 h-5 text-indigo-400" />
                     <h3 className="text-lg font-semibold text-white">Topics Trending on Internet Today</h3>
                   </div>
-                  <div className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-neutral-500 font-bold">
-                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                    Live Updates
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={fetchTrending}
+                      disabled={isLoadingTrending}
+                      className="text-xs font-bold text-neutral-500 hover:text-indigo-400 transition-colors flex items-center gap-1 uppercase tracking-widest"
+                    >
+                      <History className={`w-3 h-3 ${isLoadingTrending ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </button>
+                    <div className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-neutral-500 font-bold">
+                      <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                      Live Updates
+                    </div>
                   </div>
                 </div>
 
                 {isLoadingTrending ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-6 h-6 text-neutral-700 animate-spin" />
+                  <div className="flex flex-col items-center justify-center py-12 bg-neutral-950/50 rounded-2xl border border-neutral-800/50">
+                    <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-4" />
+                    <p className="text-sm text-neutral-500 font-medium">Scanning the internet for latest news...</p>
+                  </div>
+                ) : trendingError ? (
+                  <div className="flex flex-col items-center justify-center py-12 bg-neutral-950/50 rounded-2xl border border-neutral-800/50 text-center px-6">
+                    <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center mb-4">
+                      <Frown className="w-6 h-6 text-red-500" />
+                    </div>
+                    <p className="text-sm text-neutral-400 mb-4">{trendingError}</p>
+                    <button 
+                      onClick={fetchTrending}
+                      className="text-xs font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-widest border border-indigo-500/20 px-4 py-2 rounded-lg hover:bg-indigo-500/5 transition-all"
+                    >
+                      Try Again
+                    </button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
