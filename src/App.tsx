@@ -165,6 +165,7 @@ export default function App() {
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
   const [isLoadingTrending, setIsLoadingTrending] = useState(false);
   const [trendingError, setTrendingError] = useState<string | null>(null);
+  const [selectedSector, setSelectedSector] = useState<string>('All');
   const [showTeleprompter, setShowTeleprompter] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(20);
 
@@ -181,11 +182,11 @@ export default function App() {
     }
   };
 
-  const fetchTrending = async () => {
+  const fetchTrending = async (sectorOverride?: string) => {
     setIsLoadingTrending(true);
     setTrendingError(null);
     try {
-      const topics = await getTrendingTopics();
+      const topics = await getTrendingTopics(sectorOverride || selectedSector);
       setTrendingTopics(topics);
       if (topics.length === 0) {
         setTrendingError("No trending topics found at the moment.");
@@ -209,9 +210,9 @@ export default function App() {
   React.useEffect(() => {
     fetchTrending();
     // Refresh trending topics every 30 minutes
-    const interval = setInterval(fetchTrending, 1800000);
+    const interval = setInterval(() => fetchTrending(), 1800000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedSector]);
 
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
@@ -647,7 +648,7 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-4">
                     <button 
-                      onClick={fetchTrending}
+                      onClick={() => fetchTrending()}
                       disabled={isLoadingTrending}
                       className="text-xs font-bold text-neutral-500 hover:text-indigo-400 transition-colors flex items-center gap-1 uppercase tracking-widest"
                     >
@@ -659,6 +660,26 @@ export default function App() {
                       Live Updates
                     </div>
                   </div>
+                </div>
+
+                {/* Sector Selection */}
+                <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
+                  {['All', 'Technology', 'Sports', 'Finance', 'Entertainment', 'Politics', 'Science'].map((sector) => (
+                    <button
+                      key={sector}
+                      onClick={() => {
+                        setSelectedSector(sector);
+                        fetchTrending(sector);
+                      }}
+                      className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
+                        selectedSector === sector
+                          ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20'
+                          : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+                      }`}
+                    >
+                      {sector}
+                    </button>
+                  ))}
                 </div>
 
                 {isLoadingTrending ? (
@@ -673,7 +694,7 @@ export default function App() {
                     </div>
                     <p className="text-sm text-neutral-400 mb-4">{trendingError}</p>
                     <button 
-                      onClick={fetchTrending}
+                      onClick={() => fetchTrending()}
                       className="text-xs font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-widest border border-indigo-500/20 px-4 py-2 rounded-lg hover:bg-indigo-500/5 transition-all"
                     >
                       Try Again

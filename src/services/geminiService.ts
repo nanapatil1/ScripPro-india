@@ -90,7 +90,7 @@ Format the output using Markdown for readability.
   }
 }
 
-export async function getTrendingTopics(): Promise<{ title: string; category: string; url?: string }[]> {
+export async function getTrendingTopics(sector?: string): Promise<{ title: string; category: string; url?: string }[]> {
   const fallbackData = [
     { title: "AI Advancements: Impact on Global Tech Jobs", category: "Technology" },
     { title: "Global Economic Trends and Market Updates", category: "Finance" },
@@ -116,9 +116,11 @@ export async function getTrendingTopics(): Promise<{ title: string; category: st
       timeStyle: 'long' 
     });
 
+    const sectorFocus = sector && sector !== 'All' ? `specifically in the ${sector} sector` : 'across all sectors (news, technology, entertainment, and politics)';
+
     const prompt = `
       Current Date and Time (India): ${currentTime}.
-      Identify 5-7 HIGHLY TRENDING topics on the internet in the LAST HOUR (global and India-specific).
+      Identify 5-7 HIGHLY TRENDING topics on the internet in the LAST HOUR (global and India-specific) ${sectorFocus}.
       Focus on breaking news, latest technology, entertainment, and politics.
       
       IMPORTANT: Return ONLY a JSON array of objects. No other text.
