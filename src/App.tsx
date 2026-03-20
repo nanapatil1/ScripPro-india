@@ -208,6 +208,9 @@ export default function App() {
 
   React.useEffect(() => {
     fetchTrending();
+    // Refresh trending topics every 30 minutes
+    const interval = setInterval(fetchTrending, 1800000);
+    return () => clearInterval(interval);
   }, []);
 
   const [mediaFile, setMediaFile] = useState<File | null>(null);

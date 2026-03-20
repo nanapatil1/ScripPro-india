@@ -109,9 +109,17 @@ export async function getTrendingTopics(): Promise<{ title: string; category: st
 
     const ai = new GoogleGenAI({ apiKey });
     
+    const now = new Date();
+    const currentTime = now.toLocaleString('en-US', { 
+      timeZone: 'Asia/Kolkata', 
+      dateStyle: 'full', 
+      timeStyle: 'long' 
+    });
+
     const prompt = `
-      Identify 5-7 highly trending topics on the internet today (global and India-specific).
-      Focus on news, technology, entertainment, and politics.
+      Current Date and Time (India): ${currentTime}.
+      Identify 5-7 HIGHLY TRENDING topics on the internet in the LAST HOUR (global and India-specific).
+      Focus on breaking news, latest technology, entertainment, and politics.
       
       IMPORTANT: Return ONLY a JSON array of objects. No other text.
       Format: [{"title": "Topic Name", "category": "News/Tech/etc", "url": "optional_link"}]
